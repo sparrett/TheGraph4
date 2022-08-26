@@ -8,12 +8,18 @@ dataSources:
     source:
       address: "0xFe3d9e37C203567A72faD2f008A4EDb10984Cc20"
       abi: SWAPPA_TEST
+      startBlock: 14758320
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
-        - Swap
+        - SwapEntity
+        - Tenant 
+        - HourlyVolume 
+        - DailyVolume 
+        - WeeklyVoume
+        - MonthlyVolume 
       abis:
         - name: SWAPPA_TEST
           file: ./abis/SWAPPA_TEST.json

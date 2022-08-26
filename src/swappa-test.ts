@@ -1,45 +1,81 @@
-import { BigInt } from "@graphprotocol/graph-ts"
+import { BigInt, ethereum} from "@graphprotocol/graph-ts"
 import { SWAPPA_TEST, Swap } from "../generated/SWAPPA_TEST/SWAPPA_TEST"
-import { ExampleEntity } from "../generated/schema"
+import { ExampleEntity, SwapEntity, Tenant } from "../generated/schema"
+import {ONE, SECONDS_IN_DAY, ZERO} from "./constants";
+import {toBigInt} from "./utils";
 
 export function handleSwap(event: Swap): void {
-  // Entities can be loaded from the store using a string ID; this ID
-  // needs to be unique across all entities of the same type
-  let entity = ExampleEntity.load(event.transaction.from.toHex())
+  let swapentity = SwapEntity.load(event.transaction.from.toHex())
 
-  // Entities only exist after they have been saved to the store;
-  // `null` checks allow to create entities on demand
-  if (!entity) {
-    entity = new ExampleEntity(event.transaction.from.toHex())
-
-    // Entity fields can be set using simple assignments
-    entity.count = BigInt.fromI32(0)
+  if (!swapentity)
+  {
+    swapentity = new SwapEntity(event.transaction.from.toHex())
+    swapentity.id = (event.params.date).toString()
+    swapentity.sender = (event.params.sender).toHexString()
+    swapentity.to = (event.params.to).toHexString()
+    swapentity.input =  (event.params.input).toHexString()
+    swapentity.output = (event.params.output).toHexString()
+    swapentity.inputAmount =  event.params.inputAmount
+    swapentity.outputAmount =  event.params.outputAmount
+    swapentity.tenantId =  event.params.partnerId
+    swapentity.date = event.params.date
   }
+  swapentity.save()
 
-  // BigInt and BigDecimal math are supported
-  entity.count = entity.count + BigInt.fromI32(1)
 
-  // Entity fields can be set based on event parameters
-  entity.sender = event.params.sender
-  entity.to = event.params.to
+  let unixEpoch: BigInt =  event.params.date //event.block.timestamp;
 
-  // Entities can be written to the store with `.save()`
-  entity.save()
+  // you can have leap seconds apparently - but this is good enough for us ;)
+  let daysSinceEpochStart = unixEpoch / SECONDS_IN_DAY;
+  daysSinceEpochStart = daysSinceEpochStart + toBigInt(719468);
+  let era: BigInt = (daysSinceEpochStart >= ZERO ? daysSinceEpochStart : daysSinceEpochStart - toBigInt(146096)) / toBigInt(146097);
+  let dayOfEra: BigInt = (daysSinceEpochStart - era * toBigInt(146097));          // [0, 146096]
+  let yearOfEra: BigInt = (dayOfEra - dayOfEra/toBigInt(1460) + dayOfEra/toBigInt(36524) - dayOfEra/toBigInt(146096)) / toBigInt(365);  // [0, 399]
+  let year: BigInt = yearOfEra + (era * toBigInt(400));
+  let dayOfYear: BigInt = dayOfEra - (toBigInt(365)*yearOfEra + yearOfEra/toBigInt(4) - yearOfEra/toBigInt(100));                // [0, 365]
+  let monthZeroIndexed = (toBigInt(5)*dayOfYear + toBigInt(2))/toBigInt(153);                                   // [0, 11]
+  let day = dayOfYear - (toBigInt(153)*monthZeroIndexed+toBigInt(2))/toBigInt(5) + toBigInt(1);                             // [1, 31]
+  let month = monthZeroIndexed + (monthZeroIndexed < toBigInt(10) ? toBigInt(3) : toBigInt(-9));                            // [1, 12]
+  year = month <= toBigInt(2) ? year + ONE : year;
 
-  // Note: If a handler doesn't require existing field values, it is faster
-  // _not_ to load the entity from the store. Instead, create it fresh with
-  // `new Entity(...)`, set the fields that should be updated and save the
-  // entity back to the store. Fields that were not set or unset remain
-  // unchanged, allowing for partial updates to be applied.
 
-  // It is also possible to access smart contracts from mappings. For
-  // example, the contract that has emitted the event can be connected to
-  // with:
-  //
-  // let contract = Contract.bind(event.address)
-  //
-  // The following functions can then be called on this contract to access
-  // state variables and other data:
-  //
-  // - contract.swapTest(...)
+  const total_volume = new BigInt(10);
+  const fee = new BigInt(25);
+
+  let tenant_entity = Tenant.load(event.transaction.from.toHex())
+  if (!tenant_entity)
+  {
+    tenant_entity = new Tenant(event.transaction.from.toHex())
+  } 
+
+  tenant_entity.id = (event.params.partnerId).toString()
+  tenant_entity.totalVolumeUSD = total_volume
+  tenant_entity.fee  = fee
+  // tenant_entity.hourly_volume = 
+  // tenant_entity.daily_volume  = 
+  // tenant_entity.weekly_volume = 
+  // tenant_entity.monthly_volume  = 
+  tenant_entity.save()
+
+
+  
+
+
+
+
+
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
