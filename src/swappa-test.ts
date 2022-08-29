@@ -1,12 +1,25 @@
 import { BigInt, ethereum} from "@graphprotocol/graph-ts"
 import { SWAPPA_TEST, Swap } from "../generated/SWAPPA_TEST/SWAPPA_TEST"
-import { ExampleEntity, SwapEntity, Tenant } from "../generated/schema"
+import {  DailyVolume, MonthlyVolume,  YearlyVolume, SwapEntity, Tenant } from "../generated/schema"
 import {ONE, SECONDS_IN_DAY, ZERO} from "./constants";
 import {toBigInt} from "./utils";
+import { BigDecimal } from '@graphprotocol/graph-ts'
+// import {createClient} from 'urql';
+import { log } from '@graphprotocol/graph-ts'
+
 
 export function handleSwap(event: Swap): void {
-  let swapentity = SwapEntity.load(event.transaction.from.toHex())
 
+  log.info('HELOOOOOO LOG!!!!!! {}', ["hello again"])
+
+  // VOLUME AND FEE FROM SWAP API 
+  const total_volume = event.params.inputAmount
+  const fee = toBigInt(25);
+
+  var old_total_volume = toBigInt(0);
+
+// SWAP ENTITY 
+  let swapentity = SwapEntity.load(event.transaction.from.toHex())
   if (!swapentity)
   {
     swapentity = new SwapEntity(event.transaction.from.toHex())
@@ -22,10 +35,8 @@ export function handleSwap(event: Swap): void {
   }
   swapentity.save()
 
-
+  // DATE CONVERSIONS 
   let unixEpoch: BigInt =  event.params.date //event.block.timestamp;
-
-  // you can have leap seconds apparently - but this is good enough for us ;)
   let daysSinceEpochStart = unixEpoch / SECONDS_IN_DAY;
   daysSinceEpochStart = daysSinceEpochStart + toBigInt(719468);
   let era: BigInt = (daysSinceEpochStart >= ZERO ? daysSinceEpochStart : daysSinceEpochStart - toBigInt(146096)) / toBigInt(146097);
@@ -39,9 +50,7 @@ export function handleSwap(event: Swap): void {
   year = month <= toBigInt(2) ? year + ONE : year;
 
 
-  const total_volume = new BigInt(10);
-  const fee = new BigInt(25);
-
+  // TENANT ENTITY 
   let tenant_entity = Tenant.load(event.transaction.from.toHex())
   if (!tenant_entity)
   {
@@ -51,19 +60,45 @@ export function handleSwap(event: Swap): void {
   tenant_entity.id = (event.params.partnerId).toString()
   tenant_entity.totalVolumeUSD = total_volume
   tenant_entity.fee  = fee
-  // tenant_entity.hourly_volume = 
-  // tenant_entity.daily_volume  = 
-  // tenant_entity.weekly_volume = 
-  // tenant_entity.monthly_volume  = 
   tenant_entity.save()
 
+  // DAILY ENTITY
+  let daily_entity = DailyVolume.load(event.transaction.from.toHex())
+  if (!daily_entity)
+  {
+    daily_entity = new DailyVolume(event.transaction.from.toHex())
+  }
+  else{
+    old_total_volume = daily_entity.totalVolumeUSD
+  }
+  daily_entity.id = (event.params.partnerId).toString() + "-" + (day).toString() 
+  daily_entity.timestamp = (event.params.date).toString()
+  const new_total_volume = old_total_volume.plus(total_volume)
+  daily_entity.totalVolumeUSD = new_total_volume
+  daily_entity.save()
 
-  
 
+// MONTHLY ENTITY
+  let monthly_entity = MonthlyVolume.load(event.transaction.from.toHex())
+  if (!monthly_entity)
+  {
+    monthly_entity = new MonthlyVolume(event.transaction.from.toHex())
+  }
+  monthly_entity.id = (event.params.partnerId).toString() + "-" + (month).toString() 
+  monthly_entity.timestamp = (event.params.date).toString()
+  monthly_entity.totalVolumeUSD = total_volume
+  monthly_entity.save()
 
-
-
-
+  // YEARLY ENTITY 
+  let yearly_entity = YearlyVolume.load(event.transaction.from.toHex())
+  if (!yearly_entity)
+  {
+    yearly_entity = new YearlyVolume(event.transaction.from.toHex())
+  }
+  yearly_entity.id = (event.params.partnerId).toString() + "-" + (year).toString() 
+  yearly_entity.timestamp = (event.params.date).toString()
+  yearly_entity.totalVolumeUSD = total_volume
+  yearly_entity.save()
 
 }
 

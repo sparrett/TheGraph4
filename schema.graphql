@@ -1,67 +1,36 @@
-type ExampleEntity @entity {
-  id: ID!
-  count: BigInt!
-  sender: Bytes! # address
-  to: Bytes! # address
-}
-
-
-#    TenantA: Skyler      TenantB: Sophia 
-#    Swap1 Swap2 Swap3    Swap1 Swap2 Swap3 
-
-#    We want to know how much total volume 
-#    skyler is swapping in hour 8 
 
 type SwapEntity @entity {
-  id: ID!
-  sender: String! # address
-  to: String! # address
-  input: String! # address
-  output: String! # address
+  id: ID!  
+  sender: String! 
+  to: String! =
+  input: String! 
+  output: String! 
   inputAmount: BigInt!
-  outputAmount: BigInt! # uint256
-  tenantId: BigInt! # uint256
-  date: BigInt
-}
-
-# every swap entity => update total volume
-# in a specific time frame 
-
+  outputAmount: BigInt!
+  tenantId: BigInt!
+  date: BigInt}
 
 type Tenant @entity {
-  id: SwapEntity! @derivedfrom(field: "id")
-  #id: ID! # customer person who is swapping 
-  totalVolumeUSD: BigInt! # uint256
-  fee: BigInt! # uint256
-  hourly_volume: HourlyVolume 
-  daily_volume: DailyVolume
-  weekly_volume: WeeklyVolume
-  monthly_volume: MonthlyVolume
-}
-
-type HourlyVolume @entity {
-  id: ID! # hour 
-  timestamp: String!
-  totalVolumeUSD: BigInt! # uint256
-}
+  id: ID!
+  totalVolumeUSD: BigInt!
+  fee: BigInt! }
 
 type DailyVolume @entity {
-  id: ID! # number day 
+  id: ID! 
   timestamp: String!
-  totalVolumeUSD: BigInt! # uint256
-}
-
-type WeeklyVolume @entity {
-  id: ID!
-  timestamp: String!
-  totalVolumeUSD: BigInt! # uint256
-}
+  totalVolumeUSD: BigInt! }
 
 type MonthlyVolume @entity {
   id: ID!
   timestamp: String!
-  totalVolumeUSD: BigInt! # uint256
-}
+  totalVolumeUSD: BigInt! }
+
+type YearlyVolume @entity {
+  id: ID!
+  timestamp: String!
+  totalVolumeUSD: BigInt! }
 
 
 
+
+  

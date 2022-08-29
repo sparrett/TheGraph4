@@ -16,10 +16,9 @@ dataSources:
       entities:
         - SwapEntity
         - Tenant 
-        - HourlyVolume 
         - DailyVolume 
-        - WeeklyVoume
         - MonthlyVolume 
+        - YearlyVolume 
       abis:
         - name: SWAPPA_TEST
           file: ./abis/SWAPPA_TEST.json
